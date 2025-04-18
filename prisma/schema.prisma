@@ -43,6 +43,7 @@ model Estabelecimento {
     horario_funcionamento String
     cnpj                  String @unique
     contato               String
+    valor_estacionamento  Float  @default(0.0)
 
     garagens   Garagem[]
     avaliacoes Avaliacao[]
@@ -84,19 +85,19 @@ model Reserva {
 }
 
 model Plano {
-    id              Int      @id @default(autoincrement())
+    id              Int     @id @default(autoincrement())
     nome            String
     valor           Float
     periodicidade   String // mensal, anual, etc
     descricao       String?
     limite_reservas Int?
 
-    Pessoa          Pessoa[]
+    Pessoa Pessoa[]
 }
 
 model Pagamento {
     id               Int      @id @default(autoincrement())
-    id_reserva        Int      @unique
+    id_reserva       Int      @unique
     valor            Float
     metodo_pagamento String // pix, cartão, etc
     data_pagamento   DateTime
@@ -106,23 +107,23 @@ model Pagamento {
 }
 
 model Avaliacao {
-    id                Int      @id @default(autoincrement())
+    id                 Int      @id @default(autoincrement())
     id_pessoa          Int
     id_estabelecimento Int
-    nota              Int
-    comentario        String?
-    data_avaliacao    DateTime @default(now())
+    nota               Int
+    comentario         String?
+    data_avaliacao     DateTime @default(now())
 
     pessoa          Pessoa          @relation(fields: [id_pessoa], references: [id])
     estabelecimento Estabelecimento @relation(fields: [id_estabelecimento], references: [id])
 }
 
 model LogAcesso {
-    id       Int      @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
     id_pessoa Int
-    acao     String
-    datahora DateTime @default(now())
-    ip       String
+    acao      String
+    datahora  DateTime @default(now())
+    ip        String
 
     pessoa Pessoa @relation(fields: [id_pessoa], references: [id])
 }
