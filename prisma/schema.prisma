@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// schema.prisma
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Pessoa {
+    id            Int      @id @default(autoincrement())
+    nome          String
+    email         String   @unique
+    cpf           String   @unique
+    senha         String
+    cidade        String
+    estado        String
+    dt_nascimento DateTime
+    telefone      String?
+    tipo_pessoa   String   @default("cliente") // cliente, admin, etc
+    id_plano      Int
+
+    plano      Plano       @relation(fields: [id_plano], references: [id])
+    reservas   Reserva[]
+    avaliacoes Avaliacao[]
+    log_acesso LogAcesso[]
+}
+
+model Estabelecimento {
+    id                    Int    @id @default(autoincrement())
+    nome_estabelecimento  String
+    cidade                String
+    estado                String
+    endereco              String
+    horario_funcionamento String
+    cnpj                  String @unique
+    contato               String
+
+    garagens   Garagem[]
+    avaliacoes Avaliacao[]
+}
+
+model Garagem {
+    id                 Int    @id @default(autoincrement())
+    nome_garagem       String
+    id_estabelecimento Int
+
+    estabelecimento Estabelecimento @relation(fields: [id_estabelecimento], references: [id])
+    vagas           Vaga[]
+}
+
+model Vaga {
+    id          Int    @id @default(autoincrement())
+    numero_vaga String
+    tipo_vaga   String @default("comum") // comum, deficiente, elétrica, etc
+    status      String @default("livre") // livre, ocupada, em manutenção, etc
+    id_garagem  Int
+
+    garagem  Garagem   @relation(fields: [id_garagem], references: [id])
+    reservas Reserva[]
+}
+
+model Reserva {
+    id             Int       @id @default(autoincrement())
+    dthr_reserva   DateTime
+    dthr_entrada   DateTime?
+    dthr_saida     DateTime?
+    status_reserva String    @default("ativa")
+    valor_pago     Float?
+    id_vaga        Int
+    id_pessoa      Int
+
+    vaga      Vaga       @relation(fields: [id_vaga], references: [id])
+    pessoa    Pessoa     @relation(fields: [id_pessoa], references: [id])
+    pagamento Pagamento?
+}
+
+model Plano {
+    id              Int      @id @default(autoincrement())
+    nome            String
+    valor           Float
+    periodicidade   String // mensal, anual, etc
+    descricao       String?
+    limite_reservas Int?
+
+    Pessoa          Pessoa[]
+}
+
+model Pagamento {
+    id               Int      @id @default(autoincrement())
+    id_reserva        Int      @unique
+    valor            Float
+    metodo_pagamento String // pix, cartão, etc
+    data_pagamento   DateTime
+    status_pagamento String
+
+    reserva Reserva @relation(fields: [id_reserva], references: [id])
+}
+
+model Avaliacao {
+    id                Int      @id @default(autoincrement())
+    id_pessoa          Int
+    id_estabelecimento Int
+    nota              Int
+    comentario        String?
+    data_avaliacao    DateTime @default(now())
+
+    pessoa          Pessoa          @relation(fields: [id_pessoa], references: [id])
+    estabelecimento Estabelecimento @relation(fields: [id_estabelecimento], references: [id])
+}
+
+model LogAcesso {
+    id       Int      @id @default(autoincrement())
+    id_pessoa Int
+    acao     String
+    datahora DateTime @default(now())
+    ip       String
+
+    pessoa Pessoa @relation(fields: [id_pessoa], references: [id])
+}
