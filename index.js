@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
-const { getEstabelecimentosComValor } = require('@prisma/client/sql')
+const { getEstabelecimentosComValor, fazerReserva } = require('@prisma/client/sql')
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -62,8 +62,16 @@ app.get('/api/reservation_modal', async (req, res) => {
     }
   })
 
-
   res.json(reservation_modal_data[0])
+})
+
+app.post('/api/make_reservation', jsonParser, async (req, res) => {
+  const id_garagem = Number(req.body["id_garagem"])
+  const id_vaga = Number(req.body["id_vaga"])
+
+  await prisma.$queryRawTyped(fazerReserva(id_garagem, id_vaga))
+
+  res.send(200)
 })
 
 app.listen(port, () => {
