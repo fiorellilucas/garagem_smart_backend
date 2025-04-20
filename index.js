@@ -2,12 +2,15 @@ const { PrismaClient } = require('@prisma/client')
 const { getEstabelecimentosComValor } = require('@prisma/client/sql')
 const express = require('express')
 const cors = require('cors')
+const bodyParser = require('body-parser')
 
 const app = express()
 const port = 3000
 const prisma = new PrismaClient()
 
 app.use(cors())
+
+const jsonParser = bodyParser.json()
 
 app.get('/', (req, res) => {
   res.send('hello world')
