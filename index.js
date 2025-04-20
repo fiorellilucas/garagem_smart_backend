@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
-const { getEstabelecimentosComValor, getReservationModalData } = require('@prisma/client/sql')
+const { getEstabelecimentosComValor } = require('@prisma/client/sql')
 const express = require('express')
 const cors = require('cors')
 
