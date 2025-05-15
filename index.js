@@ -71,6 +71,15 @@ app.post('/api/make_reservation', jsonParser, async (req, res) => {
 
   await prisma.$queryRawTyped(fazerReserva(id_garagem, id_vaga))
 
+  await prisma.vaga.update({
+    where: {
+      id: id_vaga
+    },
+    data: {
+      status: 'ocupada'
+    }
+  })
+
   res.send(200)
 })
 
