@@ -46,16 +46,20 @@ app.get('/api/reservation_modal', async (req, res) => {
     select: {
       id: true,
       nome_estabelecimento: true,
-      garagens: {select: {
-        id: true,
-        nome_garagem: true,
-        vagas: {select: {
+      garagens: {
+        select: {
           id: true,
-          numero_vaga: true, 
-          tipo_vaga: true,
-          status: true
-        }}
-      }}
+          nome_garagem: true,
+          vagas: {
+            select: {
+              id: true,
+              numero_vaga: true,
+              tipo_vaga: true,
+              status: true
+            }
+          }
+        }
+      }
     },
     where: {
       id: id_estabelecimento
@@ -66,10 +70,34 @@ app.get('/api/reservation_modal', async (req, res) => {
 })
 
 app.post('/api/make_reservation', jsonParser, async (req, res) => {
-  const id_garagem = Number(req.body["id_garagem"])
   const id_vaga = Number(req.body["id_vaga"])
 
-  await prisma.$queryRawTyped(fazerReserva(id_garagem, id_vaga))
+  const agora = new Date();
+
+  const vagaComGaragem = await prisma.vaga.findUnique({
+    where: { id: id_vaga },
+    include: {
+      garagem: {
+        include: {
+          estabelecimento: true
+        }
+      }
+    }
+  });
+
+  const valorEstacionamento = vagaComGaragem.garagem.estabelecimento.valor_estacionamento;
+
+  await prisma.reserva.create({
+    data: {
+      dthr_reserva: agora,
+      dthr_entrada: agora,
+      dthr_saida: new Date(agora.getTime() + 60 * 60 * 1000),
+      id_pessoa: 2,
+      id_vaga: id_vaga,
+      status_reserva: "ativa",
+      valor_pago: valorEstacionamento
+    }
+  });
 
   await prisma.vaga.update({
     where: {
@@ -80,7 +108,7 @@ app.post('/api/make_reservation', jsonParser, async (req, res) => {
     }
   })
 
-  res.send(200)
+  res.status(200)
 })
 
 app.listen(port, () => {
