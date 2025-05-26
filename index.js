@@ -88,8 +88,9 @@ app.get('/api/reservation_modal', async (req, res) => {
   res.json(reservation_modal_data[0])
 })
 
-app.post('/api/make_reservation', jsonParser, async (req, res) => {
+app.post('/api/fazer-reserva', jsonParser, async (req, res) => {
   const id_vaga = Number(req.body["id_vaga"])
+  const id_pessoa = Number(req.body["id_pessoa"])
 
   const agora = new Date();
 
@@ -106,12 +107,14 @@ app.post('/api/make_reservation', jsonParser, async (req, res) => {
 
   const valorEstacionamento = vagaComGaragem.garagem.estabelecimento.valor_estacionamento;
 
+  console.log(id_pessoa)
+
   await prisma.reserva.create({
     data: {
       dthr_reserva: agora,
       dthr_entrada: agora,
       dthr_saida: new Date(agora.getTime() + 60 * 60 * 1000),
-      id_pessoa: 2,
+      id_pessoa: id_pessoa,
       id_vaga: id_vaga,
       status_reserva: "ativa",
       valor_pago: valorEstacionamento
@@ -201,12 +204,76 @@ app.post('/api/login', jsonParser, async (req, res) => {
       { expiresIn: '2h' }
     )
 
-    res.status(200).json({ mensagem: "Login bem-sucedido", token })
+    res.status(200).json({
+      mensagem: "Login bem-sucedido",
+      token,
+      id_pessoa: usuario.id
+    });
   } catch (err) {
     console.error(err)
     res.status(500).json({ erro: "Erro ao realizar login." })
   }
 })
+
+app.get('/api/minhas-reservas', autenticarToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+
+  console.log(usuarioId)
+
+  const reservas = await prisma.reserva.findMany({
+    where: { id_pessoa: usuarioId },
+    select: {
+      id: true,
+      dthr_reserva: true,
+      status_reserva: true,
+      vaga: {
+        select: {
+          numero_vaga: true,
+          garagem: {
+            select: {
+              nome_garagem: true,
+              estabelecimento: {
+                select: { nome_estabelecimento: true }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const resultado = reservas.map(r => ({
+    id: r.id,
+    dthr_reserva: r.dthr_reserva,
+    status: r.status_reserva,
+    vaga: r.vaga.numero_vaga,
+    garagem: r.vaga.garagem.nome_garagem,
+    estabelecimento: r.vaga.garagem.estabelecimento.nome_estabelecimento
+  }));
+
+  res.json(resultado);
+});
+
+app.delete('/api/reservas/:id', autenticarToken, async (req, res) => {
+  const { id } = req.params;
+  const usuarioId = req.usuario.id;
+
+  const reserva = await prisma.reserva.findUnique({
+    where: { id: Number(id) },
+    include: { pessoa: true }
+  });
+
+  if (!reserva || reserva.id_pessoa !== usuarioId) {
+    return res.status(403).json({ erro: 'Reserva não encontrada ou não autorizada' });
+  }
+
+  await prisma.reserva.delete({
+    where: { id: Number(id) }
+  });
+
+  res.json({ mensagem: 'Reserva cancelada com sucesso' });
+});
+
 
 app.listen(port, () => {
   console.log(`Porta : ${port}`)
