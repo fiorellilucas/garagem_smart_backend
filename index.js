@@ -107,8 +107,6 @@ app.post('/api/fazer-reserva', jsonParser, async (req, res) => {
 
   const valorEstacionamento = vagaComGaragem.garagem.estabelecimento.valor_estacionamento;
 
-  console.log(id_pessoa)
-
   await prisma.reserva.create({
     data: {
       dthr_reserva: agora,
@@ -218,8 +216,6 @@ app.post('/api/login', jsonParser, async (req, res) => {
 app.get('/api/minhas-reservas', autenticarToken, async (req, res) => {
   const usuarioId = req.usuario.id;
 
-  console.log(usuarioId)
-
   const reservas = await prisma.reserva.findMany({
     where: { id_pessoa: usuarioId },
     select: {
@@ -260,19 +256,25 @@ app.delete('/api/reservas/:id', autenticarToken, async (req, res) => {
 
   const reserva = await prisma.reserva.findUnique({
     where: { id: Number(id) },
-    include: { pessoa: true }
+    include: { pessoa: true, vaga: true }  
   });
 
   if (!reserva || reserva.id_pessoa !== usuarioId) {
     return res.status(403).json({ erro: 'Reserva não encontrada ou não autorizada' });
   }
 
+  await prisma.vaga.update({
+    where: { id: reserva.id_vaga },
+    data: { status: 'livre' }
+  });
+
   await prisma.reserva.delete({
     where: { id: Number(id) }
   });
 
-  res.json({ mensagem: 'Reserva cancelada com sucesso' });
+  res.json({ mensagem: 'Reserva cancelada com sucesso e vaga liberada' });
 });
+
 
 
 app.listen(port, () => {
